@@ -11,10 +11,9 @@ import (
 )
 
 var (
-	token          = login()
-	commandRequest = CommandRequest{}
-	cloudUserName  = os.Getenv("KASA_USERNAME")
-	cloudPassword  = os.Getenv("KASA_PASSWORD")
+	token         = login()
+	cloudUserName = os.Getenv("KASA_USERNAME")
+	cloudPassword = os.Getenv("KASA_PASSWORD")
 )
 
 func login() string {
@@ -46,15 +45,13 @@ func login() string {
 	json.Unmarshal(body, &loginResponse)
 	if loginResponse.ErrorCode == 0 {
 		return loginResponse.Result.Token
-
-	} else {
-		fmt.Println(loginResponse.Msg)
-		os.Exit(1)
-		return ""
 	}
-
+	fmt.Println(loginResponse.Msg)
+	os.Exit(1)
+	return ""
 }
 
+// GetDeviceList returns a list of Devices
 func GetDeviceList() []Device {
 
 	url := fmt.Sprintf("https://wap.tplinkcloud.com?token=%s", token)
@@ -74,6 +71,7 @@ func GetDeviceList() []Device {
 
 }
 
+// GetDeviceByAlias returns a Device object using by alias
 func GetDeviceByAlias(alias string) (d Device) {
 
 	deviceList := GetDeviceList()
@@ -91,18 +89,15 @@ func GetDeviceByAlias(alias string) (d Device) {
 
 }
 
+// Off turns a device relay to the the off state
 func (d *Device) Off() {
 	url := fmt.Sprintf("%s?token=%s", d.AppServerURL, token)
-
-	commandRequest.System.SetRelayState.State = 0
-
-	commandRequestJSON, _ := json.Marshal(commandRequest)
 
 	passThroughRequest := PassThroughRequest{
 		Method: "passthrough",
 		Params: PassThroughRequestParams{
 			DeviceID:    d.DeviceID,
-			RequestData: string(commandRequestJSON),
+			RequestData: `{"system":{"set_relay_state":{"state":0}}}`,
 		},
 	}
 
@@ -117,18 +112,15 @@ func (d *Device) Off() {
 	defer res.Body.Close()
 }
 
+// On turns a device relay to the the on state
 func (d *Device) On() {
 	url := fmt.Sprintf("%s?token=%s", d.AppServerURL, token)
-
-	commandRequest.System.SetRelayState.State = 1
-
-	commandRequestJSON, _ := json.Marshal(commandRequest)
 
 	passThroughRequest := PassThroughRequest{
 		Method: "passthrough",
 		Params: PassThroughRequestParams{
 			DeviceID:    d.DeviceID,
-			RequestData: string(commandRequestJSON),
+			RequestData: `{"system":{"set_relay_state":{"state":1}}}`,
 		},
 	}
 
@@ -141,4 +133,53 @@ func (d *Device) On() {
 	res, _ := http.DefaultClient.Do(req)
 
 	defer res.Body.Close()
+}
+
+// Toggle the relay state
+func (d *Device) Toggle() {
+	info := d.GetSystemInfo()
+	if info.RelayState == 1 {
+		d.Off()
+	} else {
+		d.On()
+	}
+}
+
+// GetSystemInfo gets current information about device
+func (d *Device) GetSystemInfo() (info SystemInfo) {
+	url := fmt.Sprintf("%s?token=%s", d.AppServerURL, token)
+
+	passThroughRequest := PassThroughRequest{
+		Method: "passthrough",
+		Params: PassThroughRequestParams{
+			DeviceID:    d.DeviceID,
+			RequestData: `{"system":{"get_sysinfo":{}}}`,
+		},
+	}
+
+	payload, err := json.Marshal(passThroughRequest)
+	logIfErr(err)
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
+	logIfErr(err)
+
+	req.Header.Add("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	logIfErr(err)
+
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	logIfErr(err)
+
+	response := PassThroughResponse{}
+	err = json.Unmarshal(body, &response)
+	logIfErr(err)
+
+	sysInfoRes := CmdResponseGetSystemInfo{}
+	err = json.Unmarshal([]byte(response.Result.ResponseData), &sysInfoRes)
+	logIfErr(err)
+
+	return sysInfoRes.System.GetSysinfo
 }

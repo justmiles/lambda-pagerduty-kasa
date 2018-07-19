@@ -40,15 +40,6 @@ type PassThroughResponse struct {
 	} `json:"result"`
 }
 
-type CommandRequest struct {
-	System struct {
-		SetRelayState struct {
-			ErrCode int `json:"err_code"`
-			State   int `json:"state"`
-		} `json:"set_relay_state"`
-	} `json:"system"`
-}
-
 type CommandResponse struct {
 	ErrorCode int `json:"error_code"`
 	Result    struct {
@@ -79,4 +70,38 @@ type Device struct {
 	OemID        string `json:"oemId"`
 	DeviceID     string `json:"deviceId"`
 	DeviceHwVer  string `json:"deviceHwVer"`
+}
+
+// COMMANDS
+
+// CmdResponseGetSystemInfo describes the response object for the "Get System Info" command
+type CmdResponseGetSystemInfo struct {
+	System struct {
+		GetSysinfo SystemInfo `json:"get_sysinfo"`
+	} `json:"system"`
+}
+
+// SystemInfo of device
+type SystemInfo struct {
+	SwVer      string `json:"sw_ver"`
+	HwVer      string `json:"hw_ver"`
+	MicType    string `json:"mic_type"`
+	Model      string `json:"model"`
+	Mac        string `json:"mac"`
+	DevName    string `json:"dev_name"`
+	Alias      string `json:"alias"`
+	RelayState int    `json:"relay_state"`
+	OnTime     int    `json:"on_time"`
+	ActiveMode string `json:"active_mode"`
+	Feature    string `json:"feature"`
+	Updating   int    `json:"updating"`
+	IconHash   string `json:"icon_hash"`
+	Rssi       int    `json:"rssi"`
+	LedOff     int    `json:"led_off"`
+	LongitudeI int    `json:"longitude_i"`
+	LatitudeI  int    `json:"latitude_i"`
+	HwID       string `json:"hwId"`
+	FwID       string `json:"fwId"`
+	DeviceID   string `json:"deviceId"`
+	OemID      string `json:"oemId"`
 }
