@@ -11,12 +11,10 @@ import (
 )
 
 var (
-	token         = login()
-	cloudUserName = os.Getenv("KASA_USERNAME")
-	cloudPassword = os.Getenv("KASA_PASSWORD")
+	token string
 )
 
-func login() string {
+func Login(cloudUserName string, cloudPassword string) {
 
 	login := LoginRequest{
 		Method: "login",
@@ -44,11 +42,9 @@ func login() string {
 	var loginResponse LoginResponse
 	json.Unmarshal(body, &loginResponse)
 	if loginResponse.ErrorCode == 0 {
-		return loginResponse.Result.Token
+		token = loginResponse.Result.Token
 	}
 	fmt.Println(loginResponse.Msg)
-	os.Exit(1)
-	return ""
 }
 
 // GetDeviceList returns a list of Devices
